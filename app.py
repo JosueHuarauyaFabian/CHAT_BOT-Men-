@@ -38,14 +38,17 @@ def get_menu():
     if menu_df.empty:
         return "Lo siento, no pude cargar el menú. Por favor, contacta al soporte técnico."
     
+    # Usamos este diccionario para categorizar y mejorar la presentación
     menu_text = "🍽️ Nuestro Menú:\n\n"
     for category, items in menu_df.groupby('Category'):
         menu_text += f"**{category}**\n"
         for _, item in items.iterrows():
+            # Formateo más limpio y con saltos de línea
             menu_text += f"• {item['Item']} - {item['Serving Size']} - ${item['Price']:.2f}\n"
         menu_text += "\n"
     menu_text += "Para ver más detalles de una categoría específica, por favor pregúntame sobre ella."
     return menu_text
+
 
 def get_category_details(category):
     logging.debug(f"Detalles solicitados para la categoría: {category}")
