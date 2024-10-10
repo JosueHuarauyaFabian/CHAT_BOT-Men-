@@ -19,18 +19,18 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 def load_data():
     try:
         menu_df = pd.read_csv('menu.csv')
-        cities_df = pd.read_csv('us-cities.csv')
-        
-        # Limpiar el texto de la columna 'Item'
+        # Limpiar caracteres no ASCII y espacios en blanco
         menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
         menu_df['Item'] = menu_df['Item'].str.strip()
-
+        
+        cities_df = pd.read_csv('us-cities.csv')
         return menu_df, cities_df['City'].tolist()
     except Exception as e:
         logging.error(f"Error al cargar los datos: {e}")
         return pd.DataFrame(), []
 
 menu_df, delivery_cities = load_data()
+
 if menu_df.empty:
     st.error("No se pudo cargar el menú. Por favor, verifica el archivo menu.csv.")
 else:
