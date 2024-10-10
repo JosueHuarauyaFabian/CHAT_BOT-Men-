@@ -202,7 +202,7 @@ def handle_query(query):
             return get_category_details(category_match.group(2))
     elif re.search(r'\b(precio|costo)\b', query_lower):
         item_match = re.search(r'(precio|costo)\s+de\s+(.+)', query_lower)
-        if
+        if item_match:
             item = item_match.group(2)
             price = menu_df.loc[menu_df['Item'].str.lower() == item.lower(), 'Price']
             if not price.empty:
