@@ -27,7 +27,7 @@ def load_data():
 
 menu_df, delivery_cities = load_data()
 if menu_df.empty:
-    st.error("No se pudo cargar el menú. Por favor, verifica el archivo menu.csv.")
+    st.error("No se pudo cargar el menú. Por favor, verifica el archivo menu.csv")
 else:
     logging.info(f"Menú cargado correctamente. Categorías: {', '.join(menu_df['Category'].unique())}")
     logging.debug(f"Primeras filas del menú:\n{menu_df.head()}")
