@@ -14,14 +14,15 @@ st.set_page_config(page_title="Chatbot de Restaurante", page_icon="🍽️")
 # Inicialización del cliente OpenAI
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# Cargar datos
 @st.cache_data
 def load_data():
     try:
         menu_df = pd.read_csv('menu.csv')
-        # Limpiar caracteres no ASCII y espacios en blanco
+        # Limpiar caracteres no ASCII y espacios en blanco en los campos relevantes
         menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
         menu_df['Item'] = menu_df['Item'].str.strip()
+        menu_df['Serving Size'] = menu_df['Serving Size'].str.strip()
+        menu_df['Category'] = menu_df['Category'].str.strip()
         
         cities_df = pd.read_csv('us-cities.csv')
         return menu_df, cities_df['City'].tolist()
@@ -43,13 +44,11 @@ def get_menu():
     if menu_df.empty:
         return "Lo siento, no pude cargar el menú. Por favor, contacta al soporte técnico."
     
-    # Usamos este diccionario para categorizar y mejorar la presentación
-    menu_text = "🍽️ Nuestro Menú:\n\n"
+    menu_text = "🍽️ **Nuestro Menú:**\n\n"
     for category, items in menu_df.groupby('Category'):
-        menu_text += f"**{category}**\n"
+        menu_text += f"### {category}\n"
         for _, item in items.iterrows():
-            # Formateo más limpio y con saltos de línea
-            menu_text += f"• {item['Item']} - {item['Serving Size']} - ${item['Price']:.2f}\n"
+            menu_text += f"- **{item['Item']}** - {item['Serving Size']} - ${item['Price']:.2f}\n"
         menu_text += "\n"
     menu_text += "Para ver más detalles de una categoría específica, por favor pregúntame sobre ella."
     return menu_text
