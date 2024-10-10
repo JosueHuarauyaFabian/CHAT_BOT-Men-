@@ -20,6 +20,11 @@ def load_data():
     try:
         menu_df = pd.read_csv('menu.csv')
         cities_df = pd.read_csv('us-cities.csv')
+        
+        # Limpiar el texto de la columna 'Item'
+        menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
+        menu_df['Item'] = menu_df['Item'].str.strip()
+
         return menu_df, cities_df['City'].tolist()
     except Exception as e:
         logging.error(f"Error al cargar los datos: {e}")
