@@ -23,14 +23,14 @@ def load_data():
         menu_df['Item'] = menu_df['Item'].str.lower()
         menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
         menu_df['Item'] = menu_df['Item'].str.strip()
-        logging.debug("Productos disponibles: %s", menu_df['Item'].unique())
+        print("Productos disponibles:", menu_df['Item'].unique())
         
         cities_df = pd.read_csv('us-cities.csv')
         delivery_cities = cities_df['City'].tolist()
         
         # Imprimir el contenido de delivery_cities para depurar
-        logging.debug("Contenido de delivery_cities: %s", delivery_cities)
-        logging.debug("Tipos de elementos en delivery_cities: %s", [type(city) for city in delivery_cities])
+        print("Contenido de delivery_cities:", delivery_cities)
+        print("Tipos de elementos en delivery_cities:", [type(city) for city in delivery_cities])
         
         return menu_df, delivery_cities
     except Exception as e:
@@ -73,16 +73,15 @@ def get_category_details(category):
 
 # Funciones de manejo de entregas (coloca estas funciones después de las funciones del menú)
 def check_delivery(city):
-    city = city.strip().lower()
-    if city in [c.lower() for c in delivery_cities]:
-        return f"✅ Sí, realizamos entregas en {city.title()}. ¿Te gustaría continuar con tu pedido?"
+    if city.lower() in [c.lower() for c in delivery_cities]:
+        return f"✅ Sí, realizamos entregas en {city}."
     else:
-        return f"❌ Lo siento, actualmente no realizamos entregas en {city.title()}."
+        return f"❌ Lo siento, actualmente no realizamos entregas en {city}."
 
 def get_delivery_cities():
+    # Asegurarse de que delivery_cities sea una lista de cadenas
     if all(isinstance(city, str) for city in delivery_cities):
-        cities_list = '\n'.join([city for city in delivery_cities])
-        return f"Realizamos entregas en las siguientes ciudades:\n\n{cities_list}"
+        return "Realizamos entregas en las siguientes ciudades:\n" + "\n".join(delivery_cities) + "\n..."
     else:
         logging.error("La lista de ciudades de entrega contiene datos no válidos.")
         return "Lo siento, hubo un problema al cargar las ciudades de entrega."
@@ -132,11 +131,11 @@ def add_to_order(item, quantity):
         index = menu_items_lower.index(singular_item)
         actual_item = menu_df['Item'].iloc[index]
     else:
-        similar_items = menu_df[menu_df['Item'].str.contains(singular_item[:3], case=False)]  # Buscar por las primeras letras
-        if not similar_items.empty:
-            suggestions = ', '.join(similar_items['Item'].unique()[:3])
-            return f"Lo siento, '{item}' no está en nuestro menú. ¿Quizás quisiste decir uno de estos? {suggestions}."
-        return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
+        matching_items = menu_df[menu_df['Item'].str.contains(singular_item, case=False)]
+        if not matching_items.empty:
+            actual_item = matching_items.iloc[0]['Item']
+        else:
+            return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
 
     # Verificar la categoría del producto para asegurar que sea válida
     category = get_category(actual_item)
@@ -148,9 +147,6 @@ def add_to_order(item, quantity):
         st.session_state.current_order[actual_item] += quantity
     else:
         st.session_state.current_order[actual_item] = quantity
-
-    # Actualizar el sidebar
-    update_sidebar()
 
     # Calcular el subtotal para el artículo recién agregado
     item_price = menu_df.loc[menu_df['Item'].str.lower() == actual_item.lower(), 'Price'].iloc[0]
@@ -179,7 +175,6 @@ def remove_from_order(item):
         if key.lower() == item_lower:
             del st.session_state.current_order[key]
             total = calculate_total()
-            update_sidebar()
             return f"Se ha eliminado {key} de tu pedido. El total actual es ${total:.2f}"
     return f"{item} no estaba en tu pedido."
 
@@ -190,10 +185,12 @@ def modify_order(item, quantity):
         if key.lower() == item_lower:
             if quantity > 0:
                 st.session_state.current_order[key] = quantity
+                total = calculate_total()
+                return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${total:.2f}"
             else:
                 del st.session_state.current_order[key]
-            update_sidebar()
-            return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${calculate_total():.2f}"
+                total = calculate_total()
+                return f"Se ha eliminado {key} del pedido. El total actual es ${total:.2f}"
     return f"{item} no está en tu pedido actual."
 
 def start_order():
@@ -228,14 +225,12 @@ def confirm_order():
     
     total = calculate_total()
     st.session_state.current_order = {}
-    update_sidebar()
     return f"¡Gracias por tu pedido! Ha sido confirmado y guardado en CSV y JSON. El total es ${total:.2f}"
 
 def cancel_order():
     if not st.session_state.current_order:
         return "No hay ningún pedido para cancelar."
     st.session_state.current_order = {}
-    update_sidebar()
     return "Tu pedido ha sido cancelado."
 
 def show_current_order():
@@ -314,14 +309,12 @@ def handle_query(query):
         return get_menu()
     elif "ciudades" in query_lower and ("entrega" in query_lower or "reparte" in query_lower):
         return get_delivery_cities()
-        
     elif re.search(r'\b(entrega|reparto)\b', query_lower):
-        city_match = re.search(r'en\s+([\w\s]+)', query_lower)  # Captura nombres de ciudades de varias palabras
+        city_match = re.search(r'en\s+(\w+)', query_lower)
         if city_match:
-            return check_delivery(city_match.group(1).strip())
+            return check_delivery(city_match.group(1))
         else:
             return get_delivery_cities()
-            
     elif re.search(r'\b(precio|costo)\b', query_lower):
         item_match = re.search(r'(precio|costo)\s+de\s+(.+)', query_lower)
         if item_match:
@@ -390,18 +383,13 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     # Agregar respuesta del chatbot al historial
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# Función para mostrar el pedido actual en el sidebar
-def update_sidebar():
+# Mostrar el pedido actual
+if st.session_state.current_order:
     st.sidebar.markdown("## Pedido Actual")
     st.sidebar.markdown(show_current_order())
-    if st.sidebar.button("Confirmar Pedido", key="confirm_order"):
+    if st.sidebar.button("Confirmar Pedido"):
         st.sidebar.markdown(confirm_order())
-        st.experimental_rerun()  # Recarga para actualizar la aplicación
-    if st.sidebar.button("Cancelar Pedido", key="cancel_order"):
+    if st.sidebar.button("Cancelar Pedido"):
         st.sidebar.markdown(cancel_order())
-        st.experimental_rerun()  # Recarga para actualizar la aplicación
-
-# Llama a la función de actualización del sidebar
-update_sidebar()
 
 logging.debug(f"Estado del pedido actual: {st.session_state.current_order}")
