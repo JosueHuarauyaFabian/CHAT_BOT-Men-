@@ -23,14 +23,14 @@ def load_data():
         menu_df['Item'] = menu_df['Item'].str.lower()
         menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
         menu_df['Item'] = menu_df['Item'].str.strip()
-        print("Productos disponibles:", menu_df['Item'].unique())
+        logging.debug("Productos disponibles: %s", menu_df['Item'].unique())
         
         cities_df = pd.read_csv('us-cities.csv')
         delivery_cities = cities_df['City'].tolist()
         
         # Imprimir el contenido de delivery_cities para depurar
-        print("Contenido de delivery_cities:", delivery_cities)
-        print("Tipos de elementos en delivery_cities:", [type(city) for city in delivery_cities])
+        logging.debug("Contenido de delivery_cities: %s", delivery_cities)
+        logging.debug("Tipos de elementos en delivery_cities: %s", [type(city) for city in delivery_cities])
         
         return menu_df, delivery_cities
     except Exception as e:
@@ -149,6 +149,9 @@ def add_to_order(item, quantity):
     else:
         st.session_state.current_order[actual_item] = quantity
 
+    # Actualizar el sidebar
+    update_sidebar()
+
     # Calcular el subtotal para el artículo recién agregado
     item_price = menu_df.loc[menu_df['Item'].str.lower() == actual_item.lower(), 'Price'].iloc[0]
     item_total = item_price * quantity
@@ -176,6 +179,7 @@ def remove_from_order(item):
         if key.lower() == item_lower:
             del st.session_state.current_order[key]
             total = calculate_total()
+            update_sidebar()
             return f"Se ha eliminado {key} de tu pedido. El total actual es ${total:.2f}"
     return f"{item} no estaba en tu pedido."
 
@@ -188,8 +192,7 @@ def modify_order(item, quantity):
                 st.session_state.current_order[key] = quantity
             else:
                 del st.session_state.current_order[key]
-            # Llamar explícitamente a show_current_order para actualizar el panel lateral
-            st.sidebar.markdown(show_current_order())
+            update_sidebar()
             return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${calculate_total():.2f}"
     return f"{item} no está en tu pedido actual."
 
@@ -225,12 +228,14 @@ def confirm_order():
     
     total = calculate_total()
     st.session_state.current_order = {}
+    update_sidebar()
     return f"¡Gracias por tu pedido! Ha sido confirmado y guardado en CSV y JSON. El total es ${total:.2f}"
 
 def cancel_order():
     if not st.session_state.current_order:
         return "No hay ningún pedido para cancelar."
     st.session_state.current_order = {}
+    update_sidebar()
     return "Tu pedido ha sido cancelado."
 
 def show_current_order():
@@ -389,10 +394,10 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
 def update_sidebar():
     st.sidebar.markdown("## Pedido Actual")
     st.sidebar.markdown(show_current_order())
-    if st.sidebar.button("Confirmar Pedido"):
+    if st.sidebar.button("Confirmar Pedido", key="confirm_order"):
         st.sidebar.markdown(confirm_order())
         st.experimental_rerun()  # Recarga para actualizar la aplicación
-    if st.sidebar.button("Cancelar Pedido"):
+    if st.sidebar.button("Cancelar Pedido", key="cancel_order"):
         st.sidebar.markdown(cancel_order())
         st.experimental_rerun()  # Recarga para actualizar la aplicación
 
