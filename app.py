@@ -144,7 +144,10 @@ def add_to_order(item, quantity):
         return "Lo siento, solo vendemos productos de las categorías disponibles en nuestro menú. ¿Te gustaría ver nuestro menú?"
 
     # Añadir el producto encontrado al pedido
-    st.session_state.current_order[actual_item] = st.session_state.current_order.get(actual_item, 0) + quantity
+    if actual_item in st.session_state.current_order:
+        st.session_state.current_order[actual_item] += quantity
+    else:
+        st.session_state.current_order[actual_item] = quantity
 
     # Calcular el subtotal para el artículo recién agregado
     item_price = menu_df.loc[menu_df['Item'].str.lower() == actual_item.lower(), 'Price'].iloc[0]
@@ -164,7 +167,6 @@ def add_to_order(item, quantity):
     
     response += f"\n**Total acumulado del pedido:** ${order_total:.2f}"
     
-    update_sidebar()  # Asegurar que el sidebar se actualice después de cada cambio
     return response
 
 def remove_from_order(item):
@@ -174,10 +176,9 @@ def remove_from_order(item):
         if key.lower() == item_lower:
             del st.session_state.current_order[key]
             total = calculate_total()
-            update_sidebar()
             return f"Se ha eliminado {key} de tu pedido. El total actual es ${total:.2f}"
     return f"{item} no estaba en tu pedido."
-    
+
 def modify_order(item, quantity):
     logging.debug(f"Modificando pedido: {quantity} x {item}")
     item_lower = item.lower()
@@ -187,10 +188,11 @@ def modify_order(item, quantity):
                 st.session_state.current_order[key] = quantity
             else:
                 del st.session_state.current_order[key]
-            update_sidebar()
+            # Llamar explícitamente a show_current_order para actualizar el panel lateral
+            st.sidebar.markdown(show_current_order())
             return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${calculate_total():.2f}"
     return f"{item} no está en tu pedido actual."
-    
+
 def start_order():
     return ("Para realizar un pedido, por favor sigue estos pasos:\n"
             "1. Revisa nuestro menú\n"
@@ -223,14 +225,12 @@ def confirm_order():
     
     total = calculate_total()
     st.session_state.current_order = {}
-    update_sidebar()
     return f"¡Gracias por tu pedido! Ha sido confirmado y guardado en CSV y JSON. El total es ${total:.2f}"
 
 def cancel_order():
     if not st.session_state.current_order:
         return "No hay ningún pedido para cancelar."
     st.session_state.current_order = {}
-    update_sidebar()
     return "Tu pedido ha sido cancelado."
 
 def show_current_order():
@@ -302,7 +302,7 @@ def handle_query(query):
         response = ""
         for quantity, item in order_match:
             item = item.strip()
-            response += modify_order(item, int(quantity)) + "\n"
+            response += add_to_order(item, int(quantity)) + "\n"
         return response.strip()
     
     if "menu" in query_lower or "carta" in query_lower or "menú" in query_lower:
@@ -385,17 +385,13 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     # Agregar respuesta del chatbot al historial
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# Llamar a `update_sidebar()` al final para asegurar la actualización continua del sidebar
-def update_sidebar():
-    sidebar_placeholder = st.sidebar.empty()
-    with sidebar_placeholder.container():
-        st.sidebar.markdown("## Pedido Actual")
-        st.sidebar.markdown(show_current_order())
-        if st.sidebar.button("Confirmar Pedido"):
-            st.sidebar.markdown(confirm_order())
-            st.experimental_rerun()
-        if st.sidebar.button("Cancelar Pedido"):
-            st.sidebar.markdown(cancel_order())
-            st.experimental_rerun()
+# Mostrar el pedido actual
+if st.session_state.current_order:
+    st.sidebar.markdown("## Pedido Actual")
+    st.sidebar.markdown(show_current_order())
+    if st.sidebar.button("Confirmar Pedido"):
+        st.sidebar.markdown(confirm_order())
+    if st.sidebar.button("Cancelar Pedido"):
+        st.sidebar.markdown(cancel_order())
 
-update_sidebar()
+logging.debug(f"Estado del pedido actual: {st.session_state.current_order}")
