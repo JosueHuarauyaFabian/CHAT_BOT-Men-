@@ -115,9 +115,15 @@ def add_to_order(item, quantity):
     if quantity > 100:
         return f"Lo siento, no puedes pedir más de 100 unidades de {item}."
 
+    # Lista de categorías permitidas
+    permitted_categories = [
+        'beverages', 'breakfast', 'chicken & fish', 'coffee & tea', 
+        'desserts', 'salads', 'smoothies & shakes', 'snacks & sides'
+    ]
+
     # Normalizar el nombre del producto ingresado por el usuario
     item_lower = item.strip().lower()
-    singular_item = p.singular_noun(item_lower) or item_lower  # Convertir a singular si es plural
+    singular_item = p.singular_noun(item_lower) or item_lower
     menu_items_lower = [i.strip().lower() for i in menu_df['Item']]
     
     # Intentar una búsqueda exacta primero
@@ -125,7 +131,6 @@ def add_to_order(item, quantity):
         index = menu_items_lower.index(singular_item)
         actual_item = menu_df['Item'].iloc[index]
     else:
-        # Si no se encuentra una coincidencia exacta, realizar una búsqueda parcial
         matching_items = menu_df[menu_df['Item'].str.contains(singular_item, case=False)]
         if not matching_items.empty:
             actual_item = matching_items.iloc[0]['Item']
