@@ -144,7 +144,7 @@ def add_to_order(item, quantity):
         return "Lo siento, solo vendemos productos de las categorías disponibles en nuestro menú. ¿Te gustaría ver nuestro menú?"
 
     # Añadir el producto encontrado al pedido
-    st.session_state.current_order[actual_item] = quantity
+    st.session_state.current_order[actual_item] = st.session_state.current_order.get(actual_item, 0) + quantity
 
     # Calcular el subtotal para el artículo recién agregado
     item_price = menu_df.loc[menu_df['Item'].str.lower() == actual_item.lower(), 'Price'].iloc[0]
