@@ -85,6 +85,15 @@ def calculate_total():
             logging.warning(f"No se encontró el precio para {item}.")
     return total
 
+def get_category(item_name):
+    # Buscar el producto en el DataFrame y retornar su categoría
+    item_row = menu_df[menu_df['Item'].str.lower() == item_name.lower()]
+    if not item_row.empty:
+        return item_row['Category'].iloc[0]
+    else:
+        return None  # Devuelve None si el producto no se encuentra
+
+
 def add_to_order(item, quantity):
     logging.debug(f"Añadiendo al pedido: {quantity} x {item}")
     
