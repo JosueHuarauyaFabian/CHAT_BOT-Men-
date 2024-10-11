@@ -230,6 +230,11 @@ def handle_query(query):
             response += add_to_order(item, int(quantity)) + "\n"
         return response.strip()
     
+    # Procesar consultas no relacionadas con el menú
+    non_menu_items = ['neumático', 'ticket de bus', 'llanta']  # Agrega términos adicionales aquí si es necesario
+    if any(non_item in query_lower for non_item in non_menu_items):
+        return "Lo siento, pero este es un restaurante y no vendemos esos productos. Si te interesa, puedo mostrarte nuestro menú."
+
     # Procesar otras consultas
     if "menu" in query_lower or "carta" in query_lower or "menú" in query_lower:
         return get_menu()
@@ -271,7 +276,6 @@ def handle_query(query):
     except Exception as e:
         logging.error(f"Error generating response with OpenAI: {e}")
         return "Lo siento, no pude entender tu consulta. ¿Podrías reformularla?"
-
 
 # Título de la aplicación
 st.title("🍽️ Chatbot de Restaurante")
