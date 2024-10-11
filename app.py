@@ -169,7 +169,6 @@ def add_to_order(item, quantity):
     
     return response
     update_sidebar()
-    st.experimental_rerun()
 
 def remove_from_order(item):
     logging.debug(f"Eliminando del pedido: {item}")
@@ -181,8 +180,7 @@ def remove_from_order(item):
             return f"Se ha eliminado {key} de tu pedido. El total actual es ${total:.2f}"
     return f"{item} no estaba en tu pedido."
     update_sidebar()
-    st.experimental_rerun()
-
+   
 def modify_order(item, quantity):
     logging.debug(f"Modificando pedido: {quantity} x {item}")
     item_lower = item.lower()
@@ -197,8 +195,7 @@ def modify_order(item, quantity):
             return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${calculate_total():.2f}"
     return f"{item} no está en tu pedido actual."
     update_sidebar()
-    st.experimental_rerun()
-
+    
 def start_order():
     return ("Para realizar un pedido, por favor sigue estos pasos:\n"
             "1. Revisa nuestro menú\n"
@@ -390,6 +387,7 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     
     # Agregar respuesta del chatbot al historial
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+    update_sidebar()
 
 # Función para actualizar el pedido actual en el sidebar
 def update_sidebar():
