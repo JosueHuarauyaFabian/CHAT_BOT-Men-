@@ -115,6 +115,19 @@ def add_to_order(item, quantity):
     
     total = calculate_total()
     
+    # Devolver mensaje de confirmación con mejor formato
+    return (f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. "
+            f"El total actual es ${total:.2f}.")
+
+    
+    # Añadir el producto encontrado al pedido
+    if actual_item in st.session_state.current_order:
+        st.session_state.current_order[actual_item] += quantity
+    else:
+        st.session_state.current_order[actual_item] = quantity
+    
+    total = calculate_total()
+    
     # Devolver mensaje de confirmación
     return (f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. "
             f"El total actual es ${total:.2f}.")
