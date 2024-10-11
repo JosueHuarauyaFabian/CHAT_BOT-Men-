@@ -52,7 +52,6 @@ def get_menu():
     menu_text += "Para ver más detalles de una categoría específica, por favor pregúntame sobre ella."
     return menu_text
 
-
 def get_category_details(category):
     logging.debug(f"Detalles solicitados para la categoría: {category}")
     category_items = menu_df[menu_df['Category'] == category]
@@ -64,7 +63,7 @@ def get_category_details(category):
         details += f"• {item['Item']} - {item['Serving Size']} - ${item['Price']:.2f}\n"
     return details
 
-# Funciones de manejo de entregas
+# Funciones de manejo de entregas (coloca estas funciones después de las funciones del menú)
 def check_delivery(city):
     if city.lower() in [c.lower() for c in delivery_cities]:
         return f"✅ Sí, realizamos entregas en {city}."
@@ -72,8 +71,8 @@ def check_delivery(city):
         return f"❌ Lo siento, actualmente no realizamos entregas en {city}."
 
 def get_delivery_cities():
-    return "Realizamos entregas en las siguientes ciudades:\n" + "\n".join(delivery_cities[:10]) + "\n..."
-
+    return "Realizamos entregas en las siguientes ciudades:\n" + "\n".join(delivery_cities) + "\n..."
+    
 # Funciones de manejo de pedidos
 def calculate_total():
     total = 0
