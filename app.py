@@ -391,14 +391,12 @@ def update_sidebar():
     st.sidebar.markdown(show_current_order())
     if st.sidebar.button("Confirmar Pedido"):
         st.sidebar.markdown(confirm_order())
-        st.experimental_rerun()  # Forzar recarga para actualizar
+        st.experimental_rerun()  # Recarga para actualizar la aplicación
     if st.sidebar.button("Cancelar Pedido"):
         st.sidebar.markdown(cancel_order())
-        st.experimental_rerun()  # Forzar recarga para actualizar
+        st.experimental_rerun()  # Recarga para actualizar la aplicación
 
-# Llamar a la función de actualización del sidebar
-if st.session_state.current_order:
-    update_sidebar()
-
+# Llama a la función de actualización del sidebar
+update_sidebar()
 
 logging.debug(f"Estado del pedido actual: {st.session_state.current_order}")
