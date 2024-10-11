@@ -102,7 +102,7 @@ def add_to_order(item, quantity):
         if not matching_items.empty:
             actual_item = matching_items.iloc[0]['Item']
         else:
-            return f"Lo siento, {item} no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
+            return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
     
     # Añadir el producto encontrado al pedido
     if actual_item in st.session_state.current_order:
@@ -112,7 +112,7 @@ def add_to_order(item, quantity):
     
     total = calculate_total()
     
-    # Asegurarse de que el texto tenga el formato adecuado
+    # Mensaje de confirmación con espaciado adecuado y formato legible
     return f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. El total actual es ${total:.2f}."
 
 def remove_from_order(item):
