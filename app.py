@@ -100,12 +100,9 @@ def add_to_order(item, quantity):
         # Si no se encuentra una coincidencia exacta, realizar una búsqueda parcial
         matching_items = menu_df[menu_df['Item'].str.contains(item_lower, case=False)]
         if not matching_items.empty:
-            # Asumir el primer resultado de la búsqueda parcial
             actual_item = matching_items.iloc[0]['Item']
         else:
-            # Si no se encuentra nada, devolver un mensaje de error
-            return (f"Lo siento, {item} no está en nuestro menú. "
-                    "Por favor, verifica el menú e intenta de nuevo.")
+            return f"Lo siento, {item} no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
     
     # Añadir el producto encontrado al pedido
     if actual_item in st.session_state.current_order:
@@ -115,10 +112,8 @@ def add_to_order(item, quantity):
     
     total = calculate_total()
     
-    # Devolver mensaje de confirmación con mejor formato
-    return (f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. "
-            f"El total actual es ${total:.2f}.")
-
+    # Asegurarse de que el texto tenga el formato adecuado
+    return f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. El total actual es ${total:.2f}."
 
 def remove_from_order(item):
     logging.debug(f"Eliminando del pedido: {item}")
