@@ -14,16 +14,15 @@ st.set_page_config(page_title="Chatbot de Restaurante", page_icon="🍽️")
 # Inicialización del cliente OpenAI
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
+# Cargar datos y hacer que los nombres sean insensibles a mayúsculas/minúsculas
 @st.cache_data
 def load_data():
     try:
         menu_df = pd.read_csv('menu.csv')
-        # Limpiar caracteres no ASCII y espacios en blanco en los campos relevantes
+        menu_df['Item'] = menu_df['Item'].str.lower()  # convertir a minúsculas
         menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
         menu_df['Item'] = menu_df['Item'].str.strip()
-        menu_df['Serving Size'] = menu_df['Serving Size'].str.strip()
-        menu_df['Category'] = menu_df['Category'].str.strip()
-        
+        print("Productos disponibles:", menu_df['Item'].unique())  # salida de los productos
         cities_df = pd.read_csv('us-cities.csv')
         return menu_df, cities_df['City'].tolist()
     except Exception as e:
