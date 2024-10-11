@@ -112,7 +112,7 @@ def add_to_order(item, quantity):
     
     total = calculate_total()
     
-    # Mensaje de confirmación con espaciado adecuado y formato legible
+    # Usar formato Markdown con separadores claros y formateo
     return f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. El total actual es ${total:.2f}."
 
 def remove_from_order(item):
