@@ -36,7 +36,6 @@ def load_data():
         logging.error(f"Error al cargar los datos: {e}")
         return pd.DataFrame(), []
 
-
 menu_df, delivery_cities = load_data()
 
 if menu_df.empty:
