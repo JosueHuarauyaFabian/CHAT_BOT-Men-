@@ -186,11 +186,12 @@ def modify_order(item, quantity):
         if key.lower() == item_lower:
             if quantity > 0:
                 st.session_state.current_order[key] = quantity
+                total = calculate_total()
+                return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${total:.2f}"
             else:
                 del st.session_state.current_order[key]
-            # Llamar explícitamente a show_current_order para actualizar el panel lateral
-            st.sidebar.markdown(show_current_order())
-            return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${calculate_total():.2f}"
+                total = calculate_total()
+                return f"Se ha eliminado {key} del pedido. El total actual es ${total:.2f}"
     return f"{item} no está en tu pedido actual."
 
 def start_order():
