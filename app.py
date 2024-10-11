@@ -144,17 +144,14 @@ def add_to_order(item, quantity):
         return "Lo siento, solo vendemos productos de las categorías disponibles en nuestro menú. ¿Te gustaría ver nuestro menú?"
 
     # Añadir el producto encontrado al pedido
-    if actual_item in st.session_state.current_order:
-        st.session_state.current_order[actual_item] += quantity
-    else:
-        st.session_state.current_order[actual_item] = quantity
+    st.session_state.current_order[actual_item] = quantity
 
     # Calcular el subtotal para el artículo recién agregado
     item_price = menu_df.loc[menu_df['Item'].str.lower() == actual_item.lower(), 'Price'].iloc[0]
     item_total = item_price * quantity
 
     # Generar el desglose de los artículos
-    response = f"Has añadido {quantity} {actual_item}(s) a tu pedido. Subtotal para este artículo: ${item_total:.2f}.\n\n"
+    response = f"Has modificado {actual_item}(s) en tu pedido. Subtotal para este artículo: ${item_total:.2f}.\n\n"
     
     # Mostrar el desglose del pedido completo
     response += "### Resumen de tu pedido actual:\n"
@@ -308,7 +305,7 @@ def handle_query(query):
         response = ""
         for quantity, item in order_match:
             item = item.strip()
-            response += add_to_order(item, int(quantity)) + "\n"
+            response += modify_order(item, int(quantity)) + "\n"
         return response.strip()
     
     if "menu" in query_lower or "carta" in query_lower or "menú" in query_lower:
