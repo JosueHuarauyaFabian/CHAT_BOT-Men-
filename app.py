@@ -248,18 +248,15 @@ def handle_query(query):
 
     # Clasificación de relevancia con GPT
     try:
-        # Pregunta al modelo si la consulta está relacionada con un restaurante
         relevance_check = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": "¿Está esta consulta relacionada con un restaurante o su menú? Responde con 'sí' o 'no'."},
                 {"role": "user", "content": query}
             ],
-            max_tokens=2,  # Limitamos a solo "sí" o "no"
+            max_tokens=2,
             temperature=0.0,
         )
-        
-        # Verificar si la respuesta del modelo es 'sí' o 'no'
         relevance_response = relevance_check.choices[0].message.content.strip().lower()
         if relevance_response == 'no':
             return ("Lo siento, solo puedo ayudarte con temas relacionados al restaurante. "
@@ -269,7 +266,6 @@ def handle_query(query):
         return ("Lo siento, no pude procesar tu consulta. Inténtalo nuevamente o pregunta algo "
                 "relacionado con el restaurante.")
 
-    # Procesar consultas normales si son relevantes
     query_lower = query.lower()
     order_match = re.findall(r'(\d+)\s+(.*?)\s*(?:y|,|\.|$)', query_lower)
     if order_match:
@@ -281,6 +277,8 @@ def handle_query(query):
     
     if "menu" in query_lower or "carta" in query_lower or "menú" in query_lower:
         return get_menu()
+    elif "ciudades" in query_lower and ("entrega" in query_lower or "reparte" in query_lower):
+        return get_delivery_cities()
     elif re.search(r'\b(entrega|reparto)\b', query_lower):
         city_match = re.search(r'en\s+(\w+)', query_lower)
         if city_match:
@@ -303,7 +301,6 @@ def handle_query(query):
     elif "confirmar pedido" in query_lower:
         return confirm_order()
 
-    # Generar respuesta con OpenAI para consultas relacionadas no específicas
     try:
         messages = st.session_state.messages + [{"role": "user", "content": query}]
         response = client.chat.completions.create(
