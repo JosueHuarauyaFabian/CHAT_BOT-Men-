@@ -393,13 +393,16 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     
 # Función para actualizar el pedido actual en el sidebar
 def update_sidebar():
-    st.sidebar.markdown("## Pedido Actual")
-    st.sidebar.markdown(show_current_order())
-    if st.sidebar.button("Confirmar Pedido"):
-        st.sidebar.markdown(confirm_order())
-        st.experimental_rerun()  # Recarga la página después de confirmar
-    if st.sidebar.button("Cancelar Pedido"):
-        st.sidebar.markdown(cancel_order())
-        st.experimental_rerun()  # Recarga la página después de cancelar
+    sidebar_placeholder = st.sidebar.empty()
+    with sidebar_placeholder.container():
+        st.sidebar.markdown("## Pedido Actual")
+        st.sidebar.markdown(show_current_order())
+        if st.sidebar.button("Confirmar Pedido"):
+            st.sidebar.markdown(confirm_order())
+            st.experimental_rerun()
+        if st.sidebar.button("Cancelar Pedido"):
+            st.sidebar.markdown(cancel_order())
+            st.experimental_rerun()
+
 # Llamar a `update_sidebar()` al final para asegurar la actualización continua del sidebar
 update_sidebar()
