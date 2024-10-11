@@ -374,3 +374,4 @@ if st.session_state.current_order:
     if st.sidebar.button("Cancelar Pedido"):
         st.sidebar.markdown(cancel_order())
 
+logging.debug(f"Estado del pedido actual: {st.session_state.current_order}")
