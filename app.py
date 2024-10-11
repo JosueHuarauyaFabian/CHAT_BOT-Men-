@@ -390,8 +390,8 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     
     # Agregar respuesta del chatbot al historial
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-    
-# Función para actualizar el pedido actual en el sidebar
+
+# Llamar a `update_sidebar()` al final para asegurar la actualización continua del sidebar
 def update_sidebar():
     sidebar_placeholder = st.sidebar.empty()
     with sidebar_placeholder.container():
@@ -404,5 +404,4 @@ def update_sidebar():
             st.sidebar.markdown(cancel_order())
             st.experimental_rerun()
 
-# Llamar a `update_sidebar()` al final para asegurar la actualización continua del sidebar
 update_sidebar()
