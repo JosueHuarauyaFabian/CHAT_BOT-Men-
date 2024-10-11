@@ -19,15 +19,23 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 def load_data():
     try:
         menu_df = pd.read_csv('menu.csv')
-        menu_df['Item'] = menu_df['Item'].str.lower()  # convertir a minúsculas
+        menu_df['Item'] = menu_df['Item'].str.lower()
         menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
         menu_df['Item'] = menu_df['Item'].str.strip()
-        print("Productos disponibles:", menu_df['Item'].unique())  # salida de los productos
+        print("Productos disponibles:", menu_df['Item'].unique())
+        
         cities_df = pd.read_csv('us-cities.csv')
-        return menu_df, cities_df['City'].tolist()
+        delivery_cities = cities_df['City'].tolist()
+        
+        # Imprimir el contenido de delivery_cities para depurar
+        print("Contenido de delivery_cities:", delivery_cities)
+        print("Tipos de elementos en delivery_cities:", [type(city) for city in delivery_cities])
+        
+        return menu_df, delivery_cities
     except Exception as e:
         logging.error(f"Error al cargar los datos: {e}")
         return pd.DataFrame(), []
+
 
 menu_df, delivery_cities = load_data()
 
