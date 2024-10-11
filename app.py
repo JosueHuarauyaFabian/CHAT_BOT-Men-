@@ -71,7 +71,12 @@ def check_delivery(city):
         return f"❌ Lo siento, actualmente no realizamos entregas en {city}."
 
 def get_delivery_cities():
-    return "Realizamos entregas en las siguientes ciudades:\n" + "\n".join(delivery_cities) + "\n..."
+    # Asegurarse de que delivery_cities sea una lista de cadenas
+    if all(isinstance(city, str) for city in delivery_cities):
+        return "Realizamos entregas en las siguientes ciudades:\n" + "\n".join(delivery_cities) + "\n..."
+    else:
+        logging.error("La lista de ciudades de entrega contiene datos no válidos.")
+        return "Lo siento, hubo un problema al cargar las ciudades de entrega."
     
 # Funciones de manejo de pedidos
 def calculate_total():
