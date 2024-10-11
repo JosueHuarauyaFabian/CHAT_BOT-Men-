@@ -169,6 +169,7 @@ def add_to_order(item, quantity):
     
     return response
     update_sidebar()
+    st.experimental_rerun()
 
 def remove_from_order(item):
     logging.debug(f"Eliminando del pedido: {item}")
@@ -180,6 +181,7 @@ def remove_from_order(item):
             return f"Se ha eliminado {key} de tu pedido. El total actual es ${total:.2f}"
     return f"{item} no estaba en tu pedido."
     update_sidebar()
+    st.experimental_rerun()
 
 def modify_order(item, quantity):
     logging.debug(f"Modificando pedido: {quantity} x {item}")
@@ -195,6 +197,7 @@ def modify_order(item, quantity):
             return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${calculate_total():.2f}"
     return f"{item} no está en tu pedido actual."
     update_sidebar()
+    st.experimental_rerun()
 
 def start_order():
     return ("Para realizar un pedido, por favor sigue estos pasos:\n"
@@ -390,15 +393,14 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
 
 # Función para actualizar el pedido actual en el sidebar
 def update_sidebar():
-    logging.debug("Actualizando el sidebar con el pedido actual.")
     st.sidebar.markdown("## Pedido Actual")
     st.sidebar.markdown(show_current_order())
     if st.sidebar.button("Confirmar Pedido"):
         st.sidebar.markdown(confirm_order())
-        st.experimental_rerun()
+        st.experimental_rerun()  # Recarga la página después de confirmar
     if st.sidebar.button("Cancelar Pedido"):
         st.sidebar.markdown(cancel_order())
-        st.experimental_rerun()
+        st.experimental_rerun()  # Recarga la página después de cancelar
 
 # Llamar a `update_sidebar()` al final para asegurar la actualización continua del sidebar
 update_sidebar()
