@@ -214,14 +214,39 @@ def is_inappropriate(text):
     return any(word in text.lower() for word in inappropriate_words)
 
 # Función de manejo de consultas
+
 def handle_query(query):
     logging.debug(f"Consulta recibida: {query}")
+
+    # Filtro de lenguaje inapropiado
     if is_inappropriate(query):
         return "Por favor, mantén un lenguaje respetuoso."
-    
+
+    # Clasificación de relevancia con GPT
+    try:
+        # Pregunta al modelo si la consulta está relacionada con un restaurante
+        relevance_check = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "¿Está esta consulta relacionada con un restaurante o su menú? Responde con 'sí' o 'no'."},
+                {"role": "user", "content": query}
+            ],
+            max_tokens=2,  # Limitamos a solo "sí" o "no"
+            temperature=0.0,
+        )
+        
+        # Verificar si la respuesta del modelo es 'sí' o 'no'
+        relevance_response = relevance_check.choices[0].message.content.strip().lower()
+        if relevance_response == 'no':
+            return ("Lo siento, solo puedo ayudarte con temas relacionados al restaurante. "
+                    "¿Te gustaría saber más sobre nuestro menú o realizar un pedido?")
+    except Exception as e:
+        logging.error(f"Error al verificar la relevancia con GPT: {e}")
+        return ("Lo siento, no pude procesar tu consulta. Inténtalo nuevamente o pregunta algo "
+                "relacionado con el restaurante.")
+
+    # Procesar consultas normales si son relevantes
     query_lower = query.lower()
-    
-    # Detectar pedidos específicos con cantidades
     order_match = re.findall(r'(\d+)\s+(.*?)\s*(?:y|,|\.|$)', query_lower)
     if order_match:
         response = ""
@@ -230,12 +255,6 @@ def handle_query(query):
             response += add_to_order(item, int(quantity)) + "\n"
         return response.strip()
     
-    # Procesar consultas no relacionadas con el menú
-    non_menu_items = ['neumático', 'ticket de bus', 'llanta']  # Agrega términos adicionales aquí si es necesario
-    if any(non_item in query_lower for non_item in non_menu_items):
-        return "Lo siento, pero este es un restaurante y no vendemos esos productos. Si te interesa, puedo mostrarte nuestro menú."
-
-    # Procesar otras consultas
     if "menu" in query_lower or "carta" in query_lower or "menú" in query_lower:
         return get_menu()
     elif re.search(r'\b(entrega|reparto)\b', query_lower):
@@ -259,8 +278,8 @@ def handle_query(query):
         return cancel_order()
     elif "confirmar pedido" in query_lower:
         return confirm_order()
-    
-    # Utilizar OpenAI para otras consultas no detectadas
+
+    # Generar respuesta con OpenAI para consultas relacionadas no específicas
     try:
         messages = st.session_state.messages + [{"role": "user", "content": query}]
         response = client.chat.completions.create(
@@ -275,7 +294,9 @@ def handle_query(query):
         return response.choices[0].message.content
     except Exception as e:
         logging.error(f"Error generating response with OpenAI: {e}")
-        return "Lo siento, no pude entender tu consulta. ¿Podrías reformularla?"
+        return ("Lo siento, no pude entender tu consulta. ¿Podrías reformularla con algo "
+                "relacionado con nuestro restaurante?")
+
 
 # Título de la aplicación
 st.title("🍽️ Chatbot de Restaurante")
