@@ -4,7 +4,6 @@ import re
 from openai import OpenAI
 import json
 import logging
-import inflect
 
 # Configuración de logging
 logging.basicConfig(level=logging.DEBUG)
@@ -105,9 +104,6 @@ def get_category(item_name):
     else:
         return None  # Devuelve None si el producto no se encuentra
 
-# Inicializar inflect para manejar singulares y plurales
-p = inflect.engine()
-
 def add_to_order(item, quantity):
     logging.debug(f"Añadiendo al pedido: {quantity} x {item}")
     
@@ -115,33 +111,33 @@ def add_to_order(item, quantity):
     if quantity > 100:
         return f"Lo siento, no puedes pedir más de 100 unidades de {item}."
 
-    # Lista de categorías permitidas
+    # Actualizar la lista de categorías permitidas para incluir todas las que tienes en tu menú
     permitted_categories = [
         'beverages', 'breakfast', 'chicken & fish', 'coffee & tea', 
         'desserts', 'salads', 'smoothies & shakes', 'snacks & sides'
     ]
-
+    
     # Normalizar el nombre del producto ingresado por el usuario
     item_lower = item.strip().lower()
-    singular_item = p.singular_noun(item_lower) or item_lower
     menu_items_lower = [i.strip().lower() for i in menu_df['Item']]
     
     # Intentar una búsqueda exacta primero
-    if singular_item in menu_items_lower:
-        index = menu_items_lower.index(singular_item)
+    if item_lower in menu_items_lower:
+        index = menu_items_lower.index(item_lower)
         actual_item = menu_df['Item'].iloc[index]
     else:
-        matching_items = menu_df[menu_df['Item'].str.contains(singular_item, case=False)]
+        # Si no se encuentra una coincidencia exacta, realizar una búsqueda parcial
+        matching_items = menu_df[menu_df['Item'].str.contains(item_lower, case=False)]
         if not matching_items.empty:
             actual_item = matching_items.iloc[0]['Item']
         else:
             return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
 
     # Verificar la categoría del producto para asegurar que sea válida
-    category = get_category(actual_item)
+    category = get_category(actual_item)  # Función que obtiene la categoría del producto
     if category and category.lower() not in permitted_categories:
         return "Lo siento, solo vendemos productos de las categorías disponibles en nuestro menú. ¿Te gustaría ver nuestro menú?"
-
+    
     # Añadir el producto encontrado al pedido
     if actual_item in st.session_state.current_order:
         st.session_state.current_order[actual_item] += quantity
