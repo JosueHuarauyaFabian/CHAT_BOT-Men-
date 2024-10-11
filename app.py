@@ -112,12 +112,8 @@ def add_to_order(item, quantity):
     
     total = calculate_total()
     
-    # Usar `join` para unificar el mensaje de confirmación
-    message_parts = [
-        f"Se ha añadido {quantity} {actual_item}(s) a tu pedido.",
-        f"El total actual es ${total:.2f}."
-    ]
-    return " ".join(message_parts)
+    # Formatear el mensaje de confirmación con f-string
+    return f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. El total actual es ${total:.2f}."
 
 def remove_from_order(item):
     logging.debug(f"Eliminando del pedido: {item}")
