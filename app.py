@@ -88,21 +88,23 @@ def calculate_total():
 def add_to_order(item, quantity):
     logging.debug(f"Añadiendo al pedido: {quantity} x {item}")
     item_lower = item.lower()
-    # Realizar una búsqueda parcial para encontrar productos similares
-    matching_items = menu_df[menu_df['Item'].str.contains(item_lower, case=False)]
+    menu_items_lower = [i.lower() for i in menu_df['Item']]
     
-    if not matching_items.empty:
-        # Asumir el primer resultado como el más cercano
-        actual_item = matching_items.iloc[0]['Item']
+    if item_lower in menu_items_lower:
+        index = menu_items_lower.index(item_lower)
+        actual_item = menu_df['Item'].iloc[index]
         if actual_item in st.session_state.current_order:
             st.session_state.current_order[actual_item] += quantity
         else:
             st.session_state.current_order[actual_item] = quantity
         total = calculate_total()
-        return f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. El total actual es ${total:.2f}"
+        
+        # Mejorar el mensaje de respuesta
+        return (f"Se ha añadido {quantity} {actual_item}(s) a tu pedido. "
+                f"El total actual es ${total:.2f}.")
     else:
-        return f"Lo siento, {item} no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
-
+        return (f"Lo siento, {item} no está en nuestro menú. "
+                "Por favor, verifica el menú e intenta de nuevo.")
 
 def remove_from_order(item):
     logging.debug(f"Eliminando del pedido: {item}")
