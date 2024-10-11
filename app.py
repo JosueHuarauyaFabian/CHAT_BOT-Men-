@@ -385,13 +385,20 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     # Agregar respuesta del chatbot al historial
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# Mostrar el pedido actual
-if st.session_state.current_order:
+# Función para mostrar el pedido actual en el sidebar
+def update_sidebar():
     st.sidebar.markdown("## Pedido Actual")
     st.sidebar.markdown(show_current_order())
     if st.sidebar.button("Confirmar Pedido"):
         st.sidebar.markdown(confirm_order())
+        st.experimental_rerun()  # Forzar recarga para actualizar
     if st.sidebar.button("Cancelar Pedido"):
         st.sidebar.markdown(cancel_order())
+        st.experimental_rerun()  # Forzar recarga para actualizar
+
+# Llamar a la función de actualización del sidebar
+if st.session_state.current_order:
+    update_sidebar()
+
 
 logging.debug(f"Estado del pedido actual: {st.session_state.current_order}")
