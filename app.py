@@ -104,7 +104,6 @@ def get_category(item_name):
     else:
         return None  # Devuelve None si el producto no se encuentra
 
-
 def add_to_order(item, quantity):
     logging.debug(f"Añadiendo al pedido: {quantity} x {item}")
     
@@ -144,11 +143,26 @@ def add_to_order(item, quantity):
         st.session_state.current_order[actual_item] += quantity
     else:
         st.session_state.current_order[actual_item] = quantity
+
+    # Calcular el subtotal para el artículo recién agregado
+    item_price = menu_df.loc[menu_df['Item'].str.lower() == actual_item.lower(), 'Price'].iloc[0]
+    item_total = item_price * quantity
+
+    # Generar el desglose de los artículos
+    response = f"Has añadido {quantity} {actual_item}(s) a tu pedido. Subtotal para este artículo: ${item_total:.2f}.\n\n"
     
-    total = calculate_total()
+    # Mostrar el desglose del pedido completo
+    response += "### Resumen de tu pedido actual:\n"
+    order_total = 0
+    for order_item, order_quantity in st.session_state.current_order.items():
+        order_item_price = menu_df.loc[menu_df['Item'].str.lower() == order_item.lower(), 'Price'].iloc[0]
+        order_item_total = order_item_price * order_quantity
+        order_total += order_item_total
+        response += f"- {order_quantity} x {order_item} - Subtotal: ${order_item_total:.2f}\n"
     
-    # Formato del mensaje de confirmación
-    return f"Se ha añadido **{quantity} {actual_item}(s)** a tu pedido.\n\n---\n\nEl total actual es: **${total:.2f}**."
+    response += f"\n**Total acumulado del pedido:** ${order_total:.2f}"
+    
+    return response
 
 def remove_from_order(item):
     logging.debug(f"Eliminando del pedido: {item}")
