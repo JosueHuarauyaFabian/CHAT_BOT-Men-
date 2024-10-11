@@ -210,11 +210,27 @@ def show_current_order():
 
 # Función de filtrado de contenido
 def is_inappropriate(text):
-    inappropriate_words = ['tonto', 'idiota', 'estúpido', 'insulto1', 'insulto2']  # Agrega más palabras según sea necesario
-    return any(word in text.lower() for word in inappropriate_words)
+    # Utilizar GPT para verificar si el contenido es inapropiado
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "¿Este texto contiene lenguaje inapropiado o ofensivo? Responde solo 'sí' o 'no'."},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=2,  # Limitamos a solo "sí" o "no"
+            temperature=0.0,
+        )
+        
+        # Procesar la respuesta de GPT
+        response_content = response.choices[0].message.content.strip().lower()
+        return response_content == 'sí'
+    except Exception as e:
+        logging.error(f"Error al verificar el lenguaje inapropiado con GPT: {e}")
+        # Como medida de seguridad, consideramos cualquier error como potencialmente inapropiado
+        return False
 
 # Función de manejo de consultas
-
 def handle_query(query):
     logging.debug(f"Consulta recibida: {query}")
 
