@@ -301,24 +301,3 @@ if st.session_state.current_order:
     if st.sidebar.button("Cancelar Pedido"):
         st.sidebar.markdown(cancel_order())
 
-st.sidebar.markdown("## Descargas de Pedido")
-
-# Verificar y agregar botón de descarga para el archivo CSV
-if os.path.exists("orders.csv"):
-    with open("orders.csv", "rb") as file:
-        st.sidebar.download_button(
-            label="Descargar Orders CSV",
-            data=file,
-            file_name="orders.csv",
-            mime="text/csv"
-        )
-
-# Verificar y agregar botón de descarga para el archivo JSON
-if os.path.exists("orders.json"):
-    with open("orders.json", "rb") as file:
-        st.sidebar.download_button(
-            label="Descargar Orders JSON",
-            data=file,
-            file_name="orders.json",
-            mime="application/json"
-        )
