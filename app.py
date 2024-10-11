@@ -193,6 +193,16 @@ def handle_query(query):
     
     query_lower = query.lower()
     
+    # Detectar pedidos específicos con cantidades
+    order_match = re.findall(r'(\d+)\s+(.*?)\s*(?:y|,|\.|$)', query_lower)
+    if order_match:
+        response = ""
+        for quantity, item in order_match:
+            item = item.strip()
+            response += add_to_order(item, int(quantity)) + "\n"
+        return response.strip()
+    
+    # Procesar otras consultas
     if "menu" in query_lower or "carta" in query_lower or "menú" in query_lower:
         return get_menu()
     elif re.search(r'\b(entrega|reparto)\b', query_lower):
@@ -201,12 +211,6 @@ def handle_query(query):
             return check_delivery(city_match.group(1))
         else:
             return get_delivery_cities()
-    elif re.search(r'\b(pedir|ordenar|pedido)\b', query_lower):
-        return start_order()
-    elif re.search(r'\b(categoría|categoria)\b', query_lower):
-        category_match = re.search(r'(categoría|categoria)\s+(\w+)', query_lower)
-        if category_match:
-            return get_category_details(category_match.group(2))
     elif re.search(r'\b(precio|costo)\b', query_lower):
         item_match = re.search(r'(precio|costo)\s+de\s+(.+)', query_lower)
         if item_match:
@@ -222,25 +226,8 @@ def handle_query(query):
         return cancel_order()
     elif "confirmar pedido" in query_lower:
         return confirm_order()
-    elif "modificar pedido" in query_lower:
-        item_match = re.search(r'modificar pedido\s+(\d+)\s+(.+)', query_lower)
-        if item_match:
-            quantity = int(item_match.group(1))
-            item = item_match.group(2)
-            return modify_order(item, quantity)
-        else:
-            return "No pude entender qué quieres modificar. Por favor, especifica la cantidad y el item."
     
-    # Manejo de pedidos
-    order_match = re.findall(r'(\d+)\s*(.*?)(?=\d+\s*|$)', query_lower)
-    if order_match:
-        response = ""
-        for quantity, item in order_match:
-            item = item.strip()
-            response += add_to_order(item, int(quantity)) + "\n"
-        return response.strip()
-    
-    # Si no se reconoce la consulta, usamos OpenAI para generar una respuesta
+    # Utilizar OpenAI para otras consultas no detectadas
     try:
         messages = st.session_state.messages + [{"role": "user", "content": query}]
         response = client.chat.completions.create(
@@ -256,6 +243,7 @@ def handle_query(query):
     except Exception as e:
         logging.error(f"Error generating response with OpenAI: {e}")
         return "Lo siento, no pude entender tu consulta. ¿Podrías reformularla?"
+
 
 # Título de la aplicación
 st.title("🍽️ Chatbot de Restaurante")
