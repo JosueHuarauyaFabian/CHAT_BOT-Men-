@@ -109,17 +109,6 @@ def get_category(item_name):
 # Inicializar inflect para manejar singulares y plurales
 p = inflect.engine()
 
-# Función para actualizar el pedido actual en el sidebar
-def update_sidebar():
-    st.sidebar.markdown("## Pedido Actual")
-    st.sidebar.markdown(show_current_order())
-    if st.sidebar.button("Confirmar Pedido"):
-        st.sidebar.markdown(confirm_order())
-        st.experimental_rerun()  # Recarga la página después de confirmar
-    if st.sidebar.button("Cancelar Pedido"):
-        st.sidebar.markdown(cancel_order())
-        st.experimental_rerun()  # Recarga la página después de cancelar
-
 def add_to_order(item, quantity):
     logging.debug(f"Añadiendo al pedido: {quantity} x {item}")
     
@@ -398,7 +387,16 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     
     # Agregar respuesta del chatbot al historial
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-    update_sidebar()
-
+    
+# Función para actualizar el pedido actual en el sidebar
+def update_sidebar():
+    st.sidebar.markdown("## Pedido Actual")
+    st.sidebar.markdown(show_current_order())
+    if st.sidebar.button("Confirmar Pedido"):
+        st.sidebar.markdown(confirm_order())
+        st.experimental_rerun()  # Recarga la página después de confirmar
+    if st.sidebar.button("Cancelar Pedido"):
+        st.sidebar.markdown(cancel_order())
+        st.experimental_rerun()  # Recarga la página después de cancelar
 # Llamar a `update_sidebar()` al final para asegurar la actualización continua del sidebar
 update_sidebar()
