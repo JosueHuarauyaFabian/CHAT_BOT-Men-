@@ -73,15 +73,16 @@ def get_category_details(category):
 
 # Funciones de manejo de entregas (coloca estas funciones después de las funciones del menú)
 def check_delivery(city):
-    if city.lower() in [c.lower() for c in delivery_cities]:
-        return f"✅ Sí, realizamos entregas en {city}."
+    city = city.strip().lower()
+    if city in [c.lower() for c in delivery_cities]:
+        return f"✅ Sí, realizamos entregas en {city.title()}. ¿Te gustaría continuar con tu pedido?"
     else:
-        return f"❌ Lo siento, actualmente no realizamos entregas en {city}."
+        return f"❌ Lo siento, actualmente no realizamos entregas en {city.title()}."
 
 def get_delivery_cities():
-    # Asegurarse de que delivery_cities sea una lista de cadenas
     if all(isinstance(city, str) for city in delivery_cities):
-        return "Realizamos entregas en las siguientes ciudades:\n" + "\n".join(delivery_cities) + "\n..."
+        cities_list = '\n'.join([city for city in delivery_cities])
+        return f"Realizamos entregas en las siguientes ciudades:\n\n{cities_list}"
     else:
         logging.error("La lista de ciudades de entrega contiene datos no válidos.")
         return "Lo siento, hubo un problema al cargar las ciudades de entrega."
@@ -131,11 +132,11 @@ def add_to_order(item, quantity):
         index = menu_items_lower.index(singular_item)
         actual_item = menu_df['Item'].iloc[index]
     else:
-        matching_items = menu_df[menu_df['Item'].str.contains(singular_item, case=False)]
-        if not matching_items.empty:
-            actual_item = matching_items.iloc[0]['Item']
-        else:
-            return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
+        similar_items = menu_df[menu_df['Item'].str.contains(singular_item[:3], case=False)]  # Buscar por las primeras letras
+        if not similar_items.empty:
+            suggestions = ', '.join(similar_items['Item'].unique()[:3])
+            return f"Lo siento, '{item}' no está en nuestro menú. ¿Quizás quisiste decir uno de estos? {suggestions}."
+        return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
 
     # Verificar la categoría del producto para asegurar que sea válida
     category = get_category(actual_item)
@@ -309,12 +310,14 @@ def handle_query(query):
         return get_menu()
     elif "ciudades" in query_lower and ("entrega" in query_lower or "reparte" in query_lower):
         return get_delivery_cities()
+        
     elif re.search(r'\b(entrega|reparto)\b', query_lower):
-        city_match = re.search(r'en\s+(\w+)', query_lower)
+        city_match = re.search(r'en\s+([\w\s]+)', query_lower)  # Captura nombres de ciudades de varias palabras
         if city_match:
-            return check_delivery(city_match.group(1))
+            return check_delivery(city_match.group(1).strip())
         else:
             return get_delivery_cities()
+            
     elif re.search(r'\b(precio|costo)\b', query_lower):
         item_match = re.search(r'(precio|costo)\s+de\s+(.+)', query_lower)
         if item_match:
