@@ -88,6 +88,16 @@ def calculate_total():
 def add_to_order(item, quantity):
     logging.debug(f"Añadiendo al pedido: {quantity} x {item}")
     
+    # Limitar la cantidad máxima que se puede pedir de un solo producto
+    if quantity > 100:
+        return f"Lo siento, no puedes pedir más de 100 unidades de {item}."
+
+    # Actualizar la lista de categorías permitidas para incluir todas las que tienes en tu menú
+    permitted_categories = [
+        'beverages', 'breakfast', 'chicken & fish', 'coffee & tea', 
+        'desserts', 'salads', 'smoothies & shakes', 'snacks & sides'
+    ]
+    
     # Normalizar el nombre del producto ingresado por el usuario
     item_lower = item.strip().lower()
     menu_items_lower = [i.strip().lower() for i in menu_df['Item']]
@@ -103,6 +113,11 @@ def add_to_order(item, quantity):
             actual_item = matching_items.iloc[0]['Item']
         else:
             return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
+
+    # Verificar la categoría del producto para asegurar que sea válida
+    category = get_category(actual_item)  # Función que obtiene la categoría del producto
+    if category and category.lower() not in permitted_categories:
+        return "Lo siento, solo vendemos productos de las categorías disponibles en nuestro menú. ¿Te gustaría ver nuestro menú?"
     
     # Añadir el producto encontrado al pedido
     if actual_item in st.session_state.current_order:
@@ -183,19 +198,19 @@ def cancel_order():
 def show_current_order():
     if not st.session_state.current_order:
         return "No tienes ningún pedido en curso."
-    order_summary = "Tu pedido actual:\n"
+    order_summary = "### Tu pedido actual:\n\n"
     total = 0
     for item, quantity in st.session_state.current_order.items():
         price = menu_df.loc[menu_df['Item'] == item, 'Price'].iloc[0]
         item_total = price * quantity
         total += item_total
-        order_summary += f"• {quantity} x {item} - ${item_total:.2f}\n"
-    order_summary += f"\nTotal: ${total:.2f}"
+        order_summary += f"- **{quantity} x {item}** - ${item_total:.2f}\n"
+    order_summary += f"\n**Total:** ${total:.2f}"
     return order_summary
 
 # Función de filtrado de contenido
 def is_inappropriate(text):
-    inappropriate_words = ['tonto','tonta']
+    inappropriate_words = ['tonto', 'idiota', 'estúpido', 'insulto1', 'insulto2']  # Agrega más palabras según sea necesario
     return any(word in text.lower() for word in inappropriate_words)
 
 # Función de manejo de consultas
