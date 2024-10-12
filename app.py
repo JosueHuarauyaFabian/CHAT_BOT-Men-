@@ -4,6 +4,7 @@ import re
 from openai import OpenAI
 import json
 import logging
+import profanity_check
 
 # Configuración de logging
 logging.basicConfig(level=logging.DEBUG)
@@ -19,9 +20,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 def load_data():
     try:
         menu_df = pd.read_csv('menu.csv')
-        menu_df['Item'] = menu_df['Item'].str.lower()
-        menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
-        menu_df['Item'] = menu_df['Item'].str.strip()
+        menu_df['Item'] = menu_df['Item'].str.lower().str.strip()
         menu_df['Category'] = menu_df['Category'].str.lower().str.strip()
         print("Productos disponibles:", menu_df['Item'].unique())
         
@@ -45,6 +44,10 @@ if menu_df.empty:
 else:
     logging.info(f"Menú cargado correctamente. Categorías: {', '.join(menu_df['Category'].unique())}")
     logging.debug(f"Primeras filas del menú:\n{menu_df.head()}")
+
+# Filtrar comentarios inapropiados
+def is_profane(query):
+    return profanity_check.predict([query])[0] == 1
 
 # Funciones de manejo del menú
 def get_menu():
@@ -74,6 +77,7 @@ def normalize_item_name(item_name):
         item_name = item_name.replace(old, new)
     return item_name
 
+# Validar que la categoría sea permitida
 def get_category_details(category):
     logging.debug(f"Detalles solicitados para la categoría: {category}")
     category = category.lower().strip()
@@ -114,27 +118,21 @@ def calculate_total():
             logging.warning(f"No se encontró el precio para {item}.")
     return total
 
-def get_category(item_name):
-    # Buscar el producto en el DataFrame y retornar su categoría
-    item_name = normalize_item_name(item_name)
-    item_row = menu_df[menu_df['Item'].str.contains(re.escape(item_name), case=False)]
-    if not item_row.empty:
-        return item_row['Category'].iloc[0]
-    else:
-        return None  # Devuelve None si el producto no se encuentra
+# Filtrar peticiones incorrectas
+def validate_quantity(quantity):
+    if quantity <= 0 or quantity > 100:
+        return "Lo siento, la cantidad debe estar entre 1 y 100."
+    return None
+
+# Funciones de manejo de pedidos
 
 def add_to_order(item, quantity):
     logging.debug(f"Añadiendo al pedido: {quantity} x {item}")
     
-    # Limitar la cantidad máxima que se puede pedir de un solo producto
-    if quantity > 100:
-        return f"Lo siento, no puedes pedir más de 100 unidades de {item}."
-
-    # Actualizar la lista de categorías permitidas para incluir todas las que tienes en tu menú
-    permitted_categories = [
-        'beverages', 'breakfast', 'chicken & fish', 'coffee & tea', 
-        'desserts', 'salads', 'smoothies & shakes', 'snacks & sides'
-    ]
+    # Validar la cantidad
+    quantity_validation = validate_quantity(quantity)
+    if quantity_validation:
+        return quantity_validation
     
     # Normalizar el nombre del producto ingresado por el usuario
     item_lower = normalize_item_name(item)
@@ -152,11 +150,6 @@ def add_to_order(item, quantity):
         else:
             return f"Lo siento, '{item}' no está en nuestro menú. Por favor, verifica el menú e intenta de nuevo."
 
-    # Verificar la categoría del producto para asegurar que sea válida
-    category = get_category(actual_item)  # Función que obtiene la categoría del producto
-    if category and category.lower() not in permitted_categories:
-        return "Lo siento, solo vendemos productos de las categorías disponibles en nuestro menú. ¿Te gustaría ver nuestro menú?"
-    
     # Añadir el producto encontrado al pedido
     if actual_item in st.session_state.current_order:
         st.session_state.current_order[actual_item] += quantity
