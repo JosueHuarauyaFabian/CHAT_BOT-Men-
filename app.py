@@ -168,8 +168,6 @@ def add_to_order(item, quantity):
     response += f"\n**Total acumulado del pedido:** ${order_total:.2f}"
     
     return response
-    update_sidebar()
-    st.experimental_rerun()
 
 def remove_from_order(item):
     logging.debug(f"Eliminando del pedido: {item}")
@@ -180,9 +178,7 @@ def remove_from_order(item):
             total = calculate_total()
             return f"Se ha eliminado {key} de tu pedido. El total actual es ${total:.2f}"
     return f"{item} no estaba en tu pedido."
-    update_sidebar()
-    st.experimental_rerun()
-   
+
 def modify_order(item, quantity):
     logging.debug(f"Modificando pedido: {quantity} x {item}")
     item_lower = item.lower()
@@ -190,15 +186,14 @@ def modify_order(item, quantity):
         if key.lower() == item_lower:
             if quantity > 0:
                 st.session_state.current_order[key] = quantity
+                total = calculate_total()
+                return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${total:.2f}"
             else:
                 del st.session_state.current_order[key]
-            # Llamar explícitamente a show_current_order para actualizar el panel lateral
-            st.sidebar.markdown(show_current_order())
-            return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${calculate_total():.2f}"
+                total = calculate_total()
+                return f"Se ha eliminado {key} del pedido. El total actual es ${total:.2f}"
     return f"{item} no está en tu pedido actual."
-    update_sidebar()
-    st.experimental_rerun()
-    
+
 def start_order():
     return ("Para realizar un pedido, por favor sigue estos pasos:\n"
             "1. Revisa nuestro menú\n"
@@ -390,16 +385,14 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
     
     # Agregar respuesta del chatbot al historial
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-    
-# Función para actualizar el pedido actual en el sidebar
-def update_sidebar():
+
+# Mostrar el pedido actual
+if st.session_state.current_order:
     st.sidebar.markdown("## Pedido Actual")
     st.sidebar.markdown(show_current_order())
     if st.sidebar.button("Confirmar Pedido"):
         st.sidebar.markdown(confirm_order())
-        st.experimental_rerun()  # Recarga la página después de confirmar
     if st.sidebar.button("Cancelar Pedido"):
         st.sidebar.markdown(cancel_order())
-        st.experimental_rerun()  # Recarga la página después de cancelar
-# Llamar a `update_sidebar()` al final para asegurar la actualización continua del sidebar
-update_sidebar()
+
+logging.debug(f"Estado del pedido actual: {st.session_state.current_order}")
