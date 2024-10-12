@@ -22,9 +22,11 @@ def load_data():
         menu_df['Item'] = menu_df['Item'].str.lower()
         menu_df['Item'] = menu_df['Item'].str.replace('[^\x00-\x7F]+', ' ')
         menu_df['Item'] = menu_df['Item'].str.strip()
+        menu_df['Category'] = menu_df['Category'].str.lower().str.strip()
         print("Productos disponibles:", menu_df['Item'].unique())
         
         cities_df = pd.read_csv('us-cities.csv')
+        cities_df['City'] = cities_df['City'].str.lower().str.strip()
         delivery_cities = cities_df['City'].tolist()
         
         # Imprimir el contenido de delivery_cities para depurar
@@ -52,35 +54,38 @@ def get_menu():
     
     menu_text = "🍽️ **Nuestro Menú:**\n\n"
     for category, items in menu_df.groupby('Category'):
-        menu_text += f"### {category}\n"
+        menu_text += f"### {category.title()}\n"
         for _, item in items.iterrows():
-            menu_text += f"- **{item['Item']}** - {item['Serving Size']} - ${item['Price']:.2f}\n"
+            menu_text += f"- **{item['Item'].title()}** - {item['Serving Size']} - ${item['Price']:.2f}\n"
         menu_text += "\n"
     menu_text += "Para ver más detalles de una categoría específica, por favor pregúntame sobre ella."
     return menu_text
 
 def get_category_details(category):
     logging.debug(f"Detalles solicitados para la categoría: {category}")
+    category = category.lower().strip()
     category_items = menu_df[menu_df['Category'] == category]
     if category_items.empty:
         return f"Lo siento, no encontré información sobre la categoría '{category}'."
     
-    details = f"Detalles de {category}:\n\n"
+    details = f"Detalles de {category.title()}:\n\n"
     for _, item in category_items.iterrows():
-        details += f"• {item['Item']} - {item['Serving Size']} - ${item['Price']:.2f}\n"
+        details += f"• {item['Item'].title()} - {item['Serving Size']} - ${item['Price']:.2f}\n"
     return details
 
 # Funciones de manejo de entregas (coloca estas funciones después de las funciones del menú)
 def check_delivery(city):
-    if city.lower() in [c.lower() for c in delivery_cities]:
-        return f"✅ Sí, realizamos entregas en {city}."
+    city = city.strip().lower()
+    if city in delivery_cities:
+        return f"✅ Sí, realizamos entregas en {city.title()}."
     else:
-        return f"❌ Lo siento, actualmente no realizamos entregas en {city}."
+        return f"❌ Lo siento, actualmente no realizamos entregas en {city.title()}."
 
 def get_delivery_cities():
     # Asegurarse de que delivery_cities sea una lista de cadenas
     if all(isinstance(city, str) for city in delivery_cities):
-        return "Realizamos entregas en las siguientes ciudades:\n" + "\n".join(delivery_cities) + "\n..."
+        cities_list = '\n'.join([city.title() for city in delivery_cities])
+        return f"Realizamos entregas en las siguientes ciudades:\n\n{cities_list}\n..."
     else:
         logging.error("La lista de ciudades de entrega contiene datos no válidos.")
         return "Lo siento, hubo un problema al cargar las ciudades de entrega."
@@ -89,7 +94,7 @@ def get_delivery_cities():
 def calculate_total():
     total = 0
     for item, quantity in st.session_state.current_order.items():
-        price = menu_df.loc[menu_df['Item'].str.lower() == item.lower(), 'Price']
+        price = menu_df.loc[menu_df['Item'] == item.lower(), 'Price']
         if not price.empty:
             total += price.iloc[0] * quantity
         else:
@@ -98,7 +103,8 @@ def calculate_total():
 
 def get_category(item_name):
     # Buscar el producto en el DataFrame y retornar su categoría
-    item_row = menu_df[menu_df['Item'].str.lower() == item_name.lower()]
+    item_name = item_name.lower().strip()
+    item_row = menu_df[menu_df['Item'] == item_name]
     if not item_row.empty:
         return item_row['Category'].iloc[0]
     else:
@@ -127,7 +133,7 @@ def add_to_order(item, quantity):
         actual_item = menu_df['Item'].iloc[index]
     else:
         # Si no se encuentra una coincidencia exacta, realizar una búsqueda parcial
-        matching_items = menu_df[menu_df['Item'].str.contains(item_lower, case=False)]
+        matching_items = menu_df[menu_df['Item'].str.contains(re.escape(item_lower), case=False)]
         if not matching_items.empty:
             actual_item = matching_items.iloc[0]['Item']
         else:
@@ -145,20 +151,20 @@ def add_to_order(item, quantity):
         st.session_state.current_order[actual_item] = quantity
 
     # Calcular el subtotal para el artículo recién agregado
-    item_price = menu_df.loc[menu_df['Item'].str.lower() == actual_item.lower(), 'Price'].iloc[0]
+    item_price = menu_df.loc[menu_df['Item'] == actual_item.lower(), 'Price'].iloc[0]
     item_total = item_price * quantity
 
     # Generar el desglose de los artículos
-    response = f"Has añadido {quantity} {actual_item}(s) a tu pedido. Subtotal para este artículo: ${item_total:.2f}.\n\n"
+    response = f"Has añadido {quantity} {actual_item.title()}(s) a tu pedido. Subtotal para este artículo: ${item_total:.2f}.\n\n"
     
     # Mostrar el desglose del pedido completo
     response += "### Resumen de tu pedido actual:\n"
     order_total = 0
     for order_item, order_quantity in st.session_state.current_order.items():
-        order_item_price = menu_df.loc[menu_df['Item'].str.lower() == order_item.lower(), 'Price'].iloc[0]
+        order_item_price = menu_df.loc[menu_df['Item'] == order_item.lower(), 'Price'].iloc[0]
         order_item_total = order_item_price * order_quantity
         order_total += order_item_total
-        response += f"- {order_quantity} x {order_item} - Subtotal: ${order_item_total:.2f}\n"
+        response += f"- {order_quantity} x {order_item.title()} - Subtotal: ${order_item_total:.2f}\n"
     
     response += f"\n**Total acumulado del pedido:** ${order_total:.2f}"
     
@@ -171,8 +177,8 @@ def remove_from_order(item):
         if key.lower() == item_lower:
             del st.session_state.current_order[key]
             total = calculate_total()
-            return f"Se ha eliminado {key} de tu pedido. El total actual es ${total:.2f}"
-    return f"{item} no estaba en tu pedido."
+            return f"Se ha eliminado {key.title()} de tu pedido. El total actual es ${total:.2f}"
+    return f"{item.title()} no estaba en tu pedido."
 
 def modify_order(item, quantity):
     logging.debug(f"Modificando pedido: {quantity} x {item}")
@@ -182,12 +188,12 @@ def modify_order(item, quantity):
             if quantity > 0:
                 st.session_state.current_order[key] = quantity
                 total = calculate_total()
-                return f"Se ha actualizado la cantidad de {key} a {quantity}. El total actual es ${total:.2f}"
+                return f"Se ha actualizado la cantidad de {key.title()} a {quantity}. El total actual es ${total:.2f}"
             else:
                 del st.session_state.current_order[key]
                 total = calculate_total()
-                return f"Se ha eliminado {key} del pedido. El total actual es ${total:.2f}"
-    return f"{item} no está en tu pedido actual."
+                return f"Se ha eliminado {key.title()} del pedido. El total actual es ${total:.2f}"
+    return f"{item.title()} no está en tu pedido actual."
 
 def start_order():
     return ("Para realizar un pedido, por favor sigue estos pasos:\n"
@@ -207,7 +213,7 @@ def confirm_order():
         return "No hay ningún pedido para confirmar. ¿Quieres empezar uno nuevo?"
     
     order_df = pd.DataFrame(list(st.session_state.current_order.items()), columns=['Item', 'Quantity'])
-    order_df['Total'] = order_df.apply(lambda row: menu_df.loc[menu_df['Item'] == row['Item'], 'Price'].iloc[0] * row['Quantity'], axis=1)
+    order_df['Total'] = order_df.apply(lambda row: menu_df.loc[menu_df['Item'] == row['Item'].lower(), 'Price'].iloc[0] * row['Quantity'], axis=1)
     
     # Guardar en CSV
     order_df.to_csv('orders.csv', mode='a', header=False, index=False)
@@ -235,10 +241,10 @@ def show_current_order():
     order_summary = "### Tu pedido actual:\n\n"
     total = 0
     for item, quantity in st.session_state.current_order.items():
-        price = menu_df.loc[menu_df['Item'] == item, 'Price'].iloc[0]
+        price = menu_df.loc[menu_df['Item'] == item.lower(), 'Price'].iloc[0]
         item_total = price * quantity
         total += item_total
-        order_summary += f"- **{quantity} x {item}** - ${item_total:.2f}\n"
+        order_summary += f"- **{quantity} x {item.title()}** - ${item_total:.2f}\n"
     order_summary += f"\n**Total:** ${total:.2f}"
     return order_summary
 
@@ -306,9 +312,9 @@ def handle_query(query):
     elif "ciudades" in query_lower and ("entrega" in query_lower or "reparte" in query_lower):
         return get_delivery_cities()
     elif re.search(r'\b(entrega|reparto)\b', query_lower):
-        city_match = re.search(r'en\s+(\w+)', query_lower)
+        city_match = re.search(r'en\s+([\w\s]+)', query_lower)  # Captura nombres de ciudades de varias palabras
         if city_match:
-            return check_delivery(city_match.group(1))
+            return check_delivery(city_match.group(1).strip())
         else:
             return get_delivery_cities()
     elif re.search(r'\b(precio|costo)\b', query_lower):
