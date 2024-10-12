@@ -314,8 +314,8 @@ def handle_query(query):
     elif re.search(r'\b(entrega|reparto)\b', query_lower):
         city_match = re.search(r'en\s+([\w\s]+)', query_lower)  # Captura nombres de ciudades de varias palabras
         if city_match:
-            city = city_match.group(1).strip()
-            return check_delivery(city)
+            city_name = city_match.group(1).strip()
+            return check_delivery(city_name)
         else:
             return get_delivery_cities()
     elif re.search(r'\b(precio|costo)\b', query_lower):
