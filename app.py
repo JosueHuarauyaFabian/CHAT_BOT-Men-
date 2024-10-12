@@ -61,6 +61,31 @@ def get_menu():
     menu_text += "Para ver más detalles de una categoría específica, por favor pregúntame sobre ella."
     return menu_text
 
+# Mejorar reconocimiento de variaciones comunes
+def normalize_item_name(item_name):
+    item_name = item_name.lower().strip()
+    replacements = {
+        "coca cola": "coca-cola",
+        "pequeñas": "small",
+        "grandes": "large",
+        "medianas": "medium",
+    }
+    for old, new in replacements.items():
+        item_name = item_name.replace(old, new)
+    return item_name
+
+def get_category_details(category):
+    logging.debug(f"Detalles solicitados para la categoría: {category}")
+    category = category.lower().strip()
+    category_items = menu_df[menu_df['Category'] == category]
+    if category_items.empty:
+        return f"Lo siento, no encontré información sobre la categoría '{category}'."
+    
+    details = f"Detalles de {category.title()}:\n\n"
+    for _, item in category_items.iterrows():
+        details += f"• {item['Item'].title()} - {item['Serving Size']} - ${item['Price']:.2f}\n"
+    return details
+
 # Funciones de manejo de entregas (coloca estas funciones después de las funciones del menú)
 def check_delivery(city):
     city = city.strip().lower()
@@ -72,8 +97,8 @@ def check_delivery(city):
 def get_delivery_cities():
     # Asegurarse de que delivery_cities sea una lista de cadenas
     if all(isinstance(city, str) for city in delivery_cities):
-        cities_list = ', '.join([city.title() for city in delivery_cities])
-        return f"Realizamos entregas en las siguientes ciudades:\n\n{cities_list}"
+        cities_list = '\n'.join([city.title() for city in delivery_cities])
+        return f"Realizamos entregas en las siguientes ciudades:\n\n{cities_list}\n..."
     else:
         logging.error("La lista de ciudades de entrega contiene datos no válidos.")
         return "Lo siento, hubo un problema al cargar las ciudades de entrega."
@@ -91,8 +116,8 @@ def calculate_total():
 
 def get_category(item_name):
     # Buscar el producto en el DataFrame y retornar su categoría
-    item_name = item_name.lower().strip()
-    item_row = menu_df[menu_df['Item'] == item_name]
+    item_name = normalize_item_name(item_name)
+    item_row = menu_df[menu_df['Item'].str.contains(re.escape(item_name), case=False)]
     if not item_row.empty:
         return item_row['Category'].iloc[0]
     else:
@@ -112,7 +137,7 @@ def add_to_order(item, quantity):
     ]
     
     # Normalizar el nombre del producto ingresado por el usuario
-    item_lower = item.strip().lower()
+    item_lower = normalize_item_name(item)
     menu_items_lower = [i.strip().lower() for i in menu_df['Item']]
     
     # Intentar una búsqueda exacta primero
@@ -158,9 +183,107 @@ def add_to_order(item, quantity):
     
     return response
 
+def remove_from_order(item):
+    logging.debug(f"Eliminando del pedido: {item}")
+    item_lower = normalize_item_name(item)
+    for key in list(st.session_state.current_order.keys()):
+        if key.lower() == item_lower:
+            del st.session_state.current_order[key]
+            total = calculate_total()
+            return f"Se ha eliminado {key.title()} de tu pedido. El total actual es ${total:.2f}"
+    return f"{item.title()} no estaba en tu pedido."
+
+def modify_order(item, quantity):
+    logging.debug(f"Modificando pedido: {quantity} x {item}")
+    item_lower = normalize_item_name(item)
+    for key in list(st.session_state.current_order.keys()):
+        if key.lower() == item_lower:
+            if quantity > 0:
+                st.session_state.current_order[key] = quantity
+                total = calculate_total()
+                return f"Se ha actualizado la cantidad de {key.title()} a {quantity}. El total actual es ${total:.2f}"
+            else:
+                del st.session_state.current_order[key]
+                total = calculate_total()
+                return f"Se ha eliminado {key.title()} del pedido. El total actual es ${total:.2f}"
+    return f"{item.title()} no está en tu pedido actual."
+
+def start_order():
+    return ("Para realizar un pedido, por favor sigue estos pasos:\n"
+            "1. Revisa nuestro menú\n"
+            "2. Dime qué items te gustaría ordenar\n"
+            "3. Proporciona tu dirección de entrega\n"
+            "4. Confirma tu pedido\n\n"
+            "¿Qué te gustaría ordenar?")
+
+def save_order_to_json(order):
+    with open('orders.json', 'a') as f:
+        json.dump(order, f)
+        f.write('\n')
+
+def confirm_order():
+    if not st.session_state.current_order:
+        return "No hay ningún pedido para confirmar. ¿Quieres empezar uno nuevo?"
+    
+    order_df = pd.DataFrame(list(st.session_state.current_order.items()), columns=['Item', 'Quantity'])
+    order_df['Total'] = order_df.apply(lambda row: menu_df.loc[menu_df['Item'] == row['Item'].lower(), 'Price'].iloc[0] * row['Quantity'], axis=1)
+    
+    # Guardar en CSV
+    order_df.to_csv('orders.csv', mode='a', header=False, index=False)
+    
+    # Guardar en JSON
+    order_json = {
+        'items': st.session_state.current_order,
+        'total': calculate_total()
+    }
+    save_order_to_json(order_json)
+    
+    total = calculate_total()
+    st.session_state.current_order = {}
+    return f"¡Gracias por tu pedido! Ha sido confirmado y guardado en CSV y JSON. El total es ${total:.2f}"
+
+def cancel_order():
+    if not st.session_state.current_order:
+        return "No hay ningún pedido para cancelar."
+    st.session_state.current_order = {}
+    return "Tu pedido ha sido cancelado."
+
+def show_current_order():
+    if not st.session_state.current_order:
+        return "No tienes ningún pedido en curso."
+    order_summary = "### Tu pedido actual:\n\n"
+    total = 0
+    for item, quantity in st.session_state.current_order.items():
+        price = menu_df.loc[menu_df['Item'] == item.lower(), 'Price'].iloc[0]
+        item_total = price * quantity
+        total += item_total
+        order_summary += f"- **{quantity} x {item.title()}** - ${item_total:.2f}\n"
+    order_summary += f"\n**Total:** ${total:.2f}"
+    return order_summary
+
 # Función de manejo de consultas
 def handle_query(query):
     logging.debug(f"Consulta recibida: {query}")
+
+    # Clasificación de relevancia con GPT
+    try:
+        relevance_check = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "¿Está esta consulta relacionada con un restaurante o su menú? Responde con 'sí' o 'no'."},
+                {"role": "user", "content": query}
+            ],
+            max_tokens=2,
+            temperature=0.0,
+        )
+        relevance_response = relevance_check.choices[0].message.content.strip().lower()
+        if relevance_response == 'no':
+            return ("Lo siento, solo puedo ayudarte con temas relacionados al restaurante. "
+                    "¿Te gustaría saber más sobre nuestro menú o realizar un pedido?")
+    except Exception as e:
+        logging.error(f"Error al verificar la relevancia con GPT: {e}")
+        return ("Lo siento, no pude procesar tu consulta. Inténtalo nuevamente o pregunta algo "
+                "relacionado con el restaurante.")
 
     query_lower = query.lower()
     order_match = re.findall(r'(\d+)\s+(.*?)\s*(?:y|,|\.|$)', query_lower)
@@ -185,9 +308,10 @@ def handle_query(query):
         item_match = re.search(r'(precio|costo)\s+de\s+(.+)', query_lower)
         if item_match:
             item = item_match.group(2)
-            price = menu_df.loc[menu_df['Item'].str.lower() == item.lower(), 'Price']
+            item = normalize_item_name(item)
+            price = menu_df.loc[menu_df['Item'].str.contains(re.escape(item), case=False), 'Price']
             if not price.empty:
-                return f"El precio de {item} es ${price.iloc[0]:.2f}"
+                return f"El precio de {item.title()} es ${price.iloc[0]:.2f}"
             else:
                 return f"Lo siento, no encontré el precio de {item}."
     elif "mostrar pedido" in query_lower:
@@ -197,8 +321,23 @@ def handle_query(query):
     elif "confirmar pedido" in query_lower:
         return confirm_order()
 
-    # Respuesta genérica si no se reconoce la consulta
-    return "Lo siento, no pude entender tu consulta. ¿Podrías reformularla con algo relacionado con nuestro restaurante?"
+    try:
+        messages = st.session_state.messages + [{"role": "user", "content": query}]
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": m["role"], "content": m["content"]}
+                for m in messages
+            ],
+            max_tokens=150,
+            temperature=0.7,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        logging.error(f"Error generating response with OpenAI: {e}")
+        return ("Lo siento, no pude entender tu consulta. ¿Podrías reformularla con algo "
+                "relacionado con nuestro restaurante?")
+
 
 # Título de la aplicación
 st.title("🍽️ Chatbot de Restaurante")
