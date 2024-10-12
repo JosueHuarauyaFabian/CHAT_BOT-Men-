@@ -4,7 +4,7 @@ import re
 from openai import OpenAI
 import json
 import logging
-import profanity_check
+from better_profanity import profanity
 
 # Configuración de logging
 logging.basicConfig(level=logging.DEBUG)
@@ -45,9 +45,12 @@ else:
     logging.info(f"Menú cargado correctamente. Categorías: {', '.join(menu_df['Category'].unique())}")
     logging.debug(f"Primeras filas del menú:\n{menu_df.head()}")
 
+# Inicializar el filtro
+profanity.load_censor_words()
+
 # Filtrar comentarios inapropiados
 def is_profane(query):
-    return profanity_check.predict([query])[0] == 1
+    return profanity.contains_profanity(query)
 
 # Funciones de manejo del menú
 def get_menu():
