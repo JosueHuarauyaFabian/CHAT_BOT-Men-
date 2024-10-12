@@ -3,4 +3,3 @@ openai==1.12.0
 pandas==2.2.3
 inflect==6.0.2
 pydantic==1.10.9
-better_profanity==0.4.1
